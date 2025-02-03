@@ -1,8 +1,14 @@
+// @ts-check
+
 import { firehose } from 'bski';
 
-tryRun();
+import { boot } from './atlas/boot';
 
-async function tryRun() {
+// runTry();
+
+runAtlas();
+
+async function runTry() {
   const out = document.createElement('pre');
   document.body.appendChild(out);
 
@@ -35,4 +41,20 @@ async function tryRun() {
     'fetched 1s worth of traffic...\n' +
     count.toLocaleString() + ' records, ' + (totalParse / count).toFixed(3).replace(/\.?0+$/, '') + 'ms/record\n' +
     out.textContent.slice(out.textContent.indexOf('\n'));
+  
+}
+
+function runAtlas() {
+
+  const elem = document.createElement('div');
+  document.body.appendChild(elem);
+
+  elem.style.cssText = `
+  position: fixed;
+  left: 0; top: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.9);
+  `;
+
+  boot(elem);
+
 }
