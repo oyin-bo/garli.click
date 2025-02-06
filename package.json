@@ -14,9 +14,11 @@
   "dependencies": {
     "ag-grid-community": "^33.0.4",
     "bski": "*",
+    "eld": "^1.0.1",
     "esbuild": "*",
     "three": "*",
-    "troika-three-text": "*"
+    "troika-three-text": "*",
+    "wink-sentiment": "^5.0.2"
   },
   "overrides": {
     "three": "$three"

@@ -1,9 +1,11 @@
 // @ts-check
 
-import { firehose } from 'bski';
-
 import { BoxGeometry, EdgesGeometry, LineBasicMaterial, LineSegments, WireframeGeometry } from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
+
+import sentiment from 'wink-sentiment';
+
+import { firehose } from 'bski';
 
 import { makeClock } from '../clock';
 import { createAtlasRenderer } from '../render';
@@ -58,7 +60,7 @@ export function boot(elem, unmountPromise) {
 
   const box = new BoxGeometry(1, 1, 1);
   const geo = new EdgesGeometry(/** @type {*} */(box));
-  const mat = new LineBasicMaterial({ color: 0xffffff, linewidth: 1, opacity: 0.24, transparent: true });
+  const mat = new LineBasicMaterial({ color: 0x808080, linewidth: 1, opacity: 0.54, transparent: true });
   const wireframe = new LineSegments(geo, mat);
   scene.add(wireframe);
 
@@ -83,36 +85,18 @@ export function boot(elem, unmountPromise) {
 
   async function* streamAccountPositions() {
     /** @type {{[uri: string]: number}} */
-    const profileIndexByShortDID = {};
+    const profileIndexByDID = {};
 
     let lastInject = Date.now();
-    const seenThreadUris = new Set();
 
     for await (const chunk of firehose()) {
-      /** @type {typeof chunk} */
-      const distinctThreads = [];
       const distinctNewShortDIDs = [];
       for (const th of chunk) {
-        let matchExisting = false;
-        for (let i = 0; i < distinctThreads.length; i++) {
-          if (distinctThreads[i].root.uri === th.root.uri) {
-            distinctThreads[i] = th;
-            matchExisting = true;
-            break;
-          }
+        if (th.action !== 'create') continue;
+        if (th.$type === 'app.bsky.feed.post') {
+          /** @type {{ score: number, normalizedScore: number }} */
+          const snt = sentiment(th.text);
         }
-        if (!matchExisting) distinctThreads.push(th);
-
-        matchExisting = false;
-        for (let i = 0; i < distinctNewShortDIDs.length; i++) {
-          if (distinctNewShortDIDs[i] === th.root.shortDID) {
-            distinctNewShortDIDs[i] = th.root.shortDID;
-            matchExisting = true;
-            break;
-          }
-        }
-
-        if (!matchExisting) distinctNewShortDIDs.push(th.root.shortDID);
       }
 
       const retrieveProfiles = [];
@@ -120,7 +104,7 @@ export function boot(elem, unmountPromise) {
         const thWithPos = /** @type {ThreadWithPosition} */(th);
         calcPos(thWithPos);
 
-        const existingProfileIndex = profileIndexByShortDID[th.root.shortDID];
+        const existingProfileIndex = profileIndexByDID[th.root.shortDID];
         if (typeof existingProfileIndex === 'number') {
           if (!seenThreadUris.has(th.root.uri)) {
             profilePositions[existingProfileIndex].mass += Math.sqrt(th.all.length) / 20000;
